@@ -1,0 +1,23 @@
+[package]
+name = "async-ffi"
+authors = ["Stephen Tse"]
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+name = "async_ffi"
+path = "src/lib.rs"
+
+[[bin]]
+name = "uniffi_bindgen"
+path = "uniffi_bindgen.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+thiserror = { version = "2" }
+uniffi = { version = "0.28.3", features = ["cli", "tokio"] }
+async-compat = { version = "0.2.0" }
+
+[build-dependencies]
+uniffi = { version = "0.28.3", features = ["build"] }
