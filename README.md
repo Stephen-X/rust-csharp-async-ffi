@@ -31,7 +31,7 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 3. Generate the C# binding code with:
 
    ```bash
-   uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="ffi\csharp"
+   uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="binding\csharp"
    ```
 
    Change the path to the library to `target/release/libasync_ffi.so` for Linux, or `target/release/libasync_ffi.dylib` for MacOS.
@@ -39,10 +39,10 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    Alternatively, to generate bindings for Python, use the official `uniffi-bindgen` tool instead, which is in sync with the latest `UniFFI` version:
 
    ```bash
-   cargo run --bin uniffi_bindgen generate --library target\release\async_ffi.dll --language python --out-dir ffi\python
+   cargo run --bin uniffi_bindgen generate --library target\release\async_ffi.dll --language python --out-dir binding\python
    ```
 
-4. Copy `async_ffi.cs` from `ffi\csharp` to the root directory of the C# project `dotnet`. Rename the file to `RustInteropUniFFI.cs`.
+4. Copy `async_ffi.cs` from `binding\csharp` to the root directory of the C# project `dotnet`. Rename the file to `RustInteropUniFFI.cs`.
 
 5. Go to directory `dotnet` and run the C# project with `dotnet run`.
 
