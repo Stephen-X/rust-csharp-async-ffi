@@ -59,4 +59,58 @@ The Rustonomicon has the following recommendation about writing [async callbacks
 > must be used. Besides classical synchronization mechanisms like mutexes, one possibility in Rust is to **use channels
 > (in `std::sync::mpsc`) to forward data from the C thread that invoked the callback into a Rust thread**.
 
-TODO
+This approach provides more control over the FFI implementation compared to UniFFI, at the cost of requiring manual implementation of both Rust scaffolding and C# bindings.
+
+### Implementation
+
+1. **Rust side (`src/lib.rs`)**:
+   - Manual FFI functions using `extern "C"` instead of UniFFI macros
+   - Uses `std::sync::mpsc` channels for thread communication
+   - Callback-based API that C# can wrap with async/await
+
+2. **C# side (`dotnet/RustInteropMpsc.cs`)**:
+   - Manual P/Invoke declarations for the Rust FFI functions
+   - Uses `TaskCompletionSource` to convert callbacks to async/await pattern
+   - Handles marshaling between C# strings and C char pointers
+
+### Usage
+
+Both approaches can be used side by side as demonstrated in `dotnet/Program.cs`:
+
+```csharp
+// UniFFI approach (auto-generated)
+var result1 = await uniffi.async_ffi.AsyncFfiMethods.SayHelloAsync("Stephen");
+
+// Manual mpsc approach  
+var result2 = await RustInteropMpsc.AsyncFfiMethods.SayHelloAsync("Stephen");
+```
+
+### Comparison
+
+**UniFFI approach:**
+- ✅ Auto-generated scaffolding and bindings
+- ✅ Less code to maintain
+- ✅ Built-in error handling and marshaling
+- ❌ Less control over implementation details
+- ❌ Dependency on UniFFI ecosystem
+
+**Manual mpsc approach:**
+- ✅ Full control over implementation
+- ✅ Follows Rustonomicon best practices for async callbacks
+- ✅ No dependency on external binding generators
+- ❌ More code to write and maintain
+- ❌ Manual error handling and marshaling required
+
+### Running the example
+
+1. Build the Rust library:
+   ```bash
+   cargo build --release
+   ```
+
+2. Run the C# project to see both approaches in action:
+   ```bash
+   cd dotnet && dotnet run
+   ```
+
+The output shows both implementations working, with the mpsc version demonstrating thread separation through different thread IDs.
