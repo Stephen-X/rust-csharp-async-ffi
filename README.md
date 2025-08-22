@@ -61,4 +61,52 @@ The Rustonomicon has the following recommendation about writing [async callbacks
 > must be used. Besides classical synchronization mechanisms like mutexes, one possibility in Rust is to **use channels
 > (in `std::sync::mpsc`) to forward data from the C thread that invoked the callback into a Rust thread**.
 
-TODO
+This project implements a manual async FFI approach using `tokio::sync::mpsc` channels that follows this recommendation.
+
+### Implementation Overview
+
+The manual implementation consists of:
+
+1. **Rust FFI functions** (`src/lib.rs`):
+   - `init_async_runtime()` - Initializes a global Tokio runtime
+   - `say_hello_async_manual()` - Accepts a C string, callback function, and user data
+   - `cleanup_async_runtime()` - Cleanup function (no-op with current implementation)
+   - Uses `tokio::sync::mpsc` channels to communicate between async tasks
+   - Follows the callback pattern recommended by the Rustonomicon
+
+2. **C# P/Invoke bindings** (`dotnet/RustInteropManual.cs`):
+   - Declares extern functions to call Rust FFI functions
+   - Implements `SayHelloAsync()` method that returns a `Task<string>`
+   - Uses `TaskCompletionSource` to bridge the callback pattern to C# async/await
+   - Properly manages memory and GC handles
+
+### Key Differences from UniFFI Approach
+
+| Aspect | UniFFI | Manual mpsc |
+|--------|--------|-------------|
+| **Code Generation** | Auto-generated scaffolding and bindings | Hand-written FFI and P/Invoke |
+| **Async Implementation** | UniFFI's built-in async runtime integration | Custom callback-based approach with channels |
+| **Memory Management** | Handled by UniFFI | Manual string allocation/deallocation |
+| **Threading** | Abstract, handled by UniFFI | Explicit use of Tokio tasks and threads |
+| **Channel Usage** | Internal to UniFFI | Explicit `tokio::sync::mpsc` channel usage |
+| **Performance** | Optimized by UniFFI | Direct FFI calls, potentially lower overhead |
+| **Flexibility** | Limited to UniFFI capabilities | Full control over implementation |
+
+### Running the Example
+
+1. Build the Rust library:
+   ```bash
+   cargo build --release
+   ```
+
+2. Run the C# project:
+   ```bash
+   cd dotnet
+   dotnet run
+   ```
+
+The program will demonstrate both approaches:
+- **Test #1**: UniFFI-based async interop
+- **Test #2**: Manual mpsc-based async interop with concurrent calls
+
+You'll notice different thread IDs in the output, showing that the manual approach uses actual Tokio thread pool threads, while the mpsc channels facilitate safe communication between the FFI boundary and the async tasks.
