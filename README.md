@@ -28,6 +28,8 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 
    2. There's no control over binding and scaffolding implementations. Whether certain (latest) Rust features can be supported is highly depedent on what `UniFFI` supports (or the version of `UniFFI` that the 3rd party binding generator supports).
 
+   To see the generated [FFI scaffolding code](https://mozilla.github.io/uniffi-rs/0.29/glossary.html#scaffolding), install [`cargo-expand`](https://github.com/dtolnay/cargo-expand) then run `cargo expand --lib`.
+
 3. Generate the C# binding code with:
 
    ```bash
