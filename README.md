@@ -34,7 +34,7 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="ffi\csharp"
    ```
 
-   For Linux, change the path to the library to `target/release/libasync_ffi.so`.
+   Change the path to the library to `target/release/libasync_ffi.so` for Linux, or `target/release/libasync_ffi.dylib` for MacOS.
 
    Alternatively, to generate bindings for Python, use the official `uniffi-bindgen` tool instead, which is in sync with the latest `UniFFI` version:
 
