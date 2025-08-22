@@ -1318,3 +1318,88 @@ internal static class AsyncFfiMethods
     }
 }
 
+// Manual FFI bindings for mpsc-based async function
+// This demonstrates manual async callbacks using Rust's std::sync::mpsc channels
+internal static class ManualMpscFfi
+{
+    // Delegate for the completion callback
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void CompletionCallback(IntPtr userData, IntPtr result);
+
+    // DLL imports for manual FFI functions
+    [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int say_hello_mpsc(
+        [MarshalAs(UnmanagedType.LPStr)] string who,
+        CompletionCallback callback,
+        IntPtr userData
+    );
+
+    [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void free_rust_string(IntPtr ptr);
+}
+
+// Public API for manual mpsc-based async function
+public static class ManualAsyncFfiMethods
+{
+    /// <summary>
+    /// Manual async function using mpsc channels for thread communication
+    /// </summary>
+    /// <param name="who">Name to greet</param>
+    /// <returns>Greeting message</returns>
+    public static Task<string> SayHelloMpscAsync(string who)
+    {
+        var tcs = new TaskCompletionSource<string>();
+        
+        // Create a GCHandle to keep the TaskCompletionSource alive
+        var handle = GCHandle.Alloc(tcs);
+        var userData = GCHandle.ToIntPtr(handle);
+
+        // Define the callback that will be called from Rust
+        ManualMpscFfi.CompletionCallback callback = (IntPtr userDataPtr, IntPtr resultPtr) =>
+        {
+            try
+            {
+                // Convert the result pointer to a string
+                var result = Marshal.PtrToStringUTF8(resultPtr);
+                
+                // Get the TaskCompletionSource from the user data
+                var handleFromCallback = GCHandle.FromIntPtr(userDataPtr);
+                var tcsFromCallback = (TaskCompletionSource<string>)handleFromCallback.Target!;
+                
+                // Complete the task
+                tcsFromCallback.SetResult(result ?? "Error: null result");
+                
+                // Free the GCHandle
+                handleFromCallback.Free();
+            }
+            catch (Exception ex)
+            {
+                // In case of any error, get the TCS and set the exception
+                try
+                {
+                    var handleFromCallback = GCHandle.FromIntPtr(userDataPtr);
+                    var tcsFromCallback = (TaskCompletionSource<string>)handleFromCallback.Target!;
+                    tcsFromCallback.SetException(ex);
+                    handleFromCallback.Free();
+                }
+                catch
+                {
+                    // If we can't even get the TCS, there's not much we can do
+                }
+            }
+        };
+
+        // Call the Rust function
+        var result = ManualMpscFfi.say_hello_mpsc(who, callback, userData);
+        
+        if (result != 0)
+        {
+            // Error occurred, clean up and return failed task
+            handle.Free();
+            return Task.FromException<string>(new System.Exception($"FFI call failed with code: {result}"));
+        }
+
+        return tcs.Task;
+    }
+}
+
