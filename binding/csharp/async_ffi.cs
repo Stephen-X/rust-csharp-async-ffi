@@ -5,6 +5,9 @@
 
 #nullable enable
 
+
+
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,34 +17,30 @@ using System.Threading;
 using System.Threading.Tasks;
 namespace uniffi.async_ffi;
 
+
+
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
 // pointer to the underlying data.
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct RustBuffer
-{
+internal struct RustBuffer {
     public ulong capacity;
     public ulong len;
     public IntPtr data;
 
-    public static RustBuffer Alloc(int size)
-    {
-        return _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) =>
-        {
+    public static RustBuffer Alloc(int size) {
+        return _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) => {
             var buffer = _UniFFILib.ffi_async_ffi_rustbuffer_alloc(Convert.ToUInt64(size), ref status);
-            if (buffer.data == IntPtr.Zero)
-            {
+            if (buffer.data == IntPtr.Zero) {
                 throw new AllocationException($"RustBuffer.Alloc() returned null data pointer (size={size})");
             }
             return buffer;
         });
     }
 
-    public static void Free(RustBuffer buffer)
-    {
-        _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) =>
-        {
+    public static void Free(RustBuffer buffer) {
+        _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) => {
             _UniFFILib.ffi_async_ffi_rustbuffer_free(buffer, ref status);
         });
     }
@@ -87,8 +86,7 @@ internal struct RustBuffer
 // completeness.
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct ForeignBytes
-{
+internal struct ForeignBytes {
     public int length;
     public IntPtr data;
 }
@@ -98,8 +96,7 @@ internal struct ForeignBytes
 //
 // All implementing objects should be public to support external types.  When a
 // type is external we need to import it's FfiConverter.
-internal abstract class FfiConverter<CsType, FfiType>
-{
+internal abstract class FfiConverter<CsType, FfiType> {
     // Convert an FFI type to a C# type
     public abstract CsType Lift(FfiType value);
 
@@ -128,18 +125,14 @@ internal abstract class FfiConverter<CsType, FfiType>
     // FfiType.  It's used by the callback interface code.  Callback interface
     // returns are always serialized into a `RustBuffer` regardless of their
     // normal FFI type.
-    public RustBuffer LowerIntoRustBuffer(CsType value)
-    {
+    public RustBuffer LowerIntoRustBuffer(CsType value) {
         var rbuf = RustBuffer.Alloc(AllocationSize(value));
-        try
-        {
+        try {
             var stream = rbuf.AsWriteableStream();
             Write(value, stream);
             rbuf.len = Convert.ToUInt64(stream.Position);
             return rbuf;
-        }
-        catch
-        {
+        } catch {
             RustBuffer.Free(rbuf);
             throw;
         }
@@ -149,34 +142,26 @@ internal abstract class FfiConverter<CsType, FfiType>
     //
     // This here mostly because of the symmetry with `lowerIntoRustBuffer()`.
     // It's currently only used by the `FfiConverterRustBuffer` class below.
-    protected CsType LiftFromRustBuffer(RustBuffer rbuf)
-    {
+    protected CsType LiftFromRustBuffer(RustBuffer rbuf) {
         var stream = rbuf.AsStream();
-        try
-        {
-            var item = Read(stream);
-            if (stream.HasRemaining())
-            {
-                throw new InternalException("junk remaining in buffer after lifting, something is very wrong!!");
-            }
-            return item;
-        }
-        finally
-        {
+        try {
+           var item = Read(stream);
+           if (stream.HasRemaining()) {
+               throw new InternalException("junk remaining in buffer after lifting, something is very wrong!!");
+           }
+           return item;
+        } finally {
             RustBuffer.Free(rbuf);
         }
     }
 }
 
 // FfiConverter that uses `RustBuffer` as the FfiType
-internal abstract class FfiConverterRustBuffer<CsType> : FfiConverter<CsType, RustBuffer>
-{
-    public override CsType Lift(RustBuffer value)
-    {
+internal abstract class FfiConverterRustBuffer<CsType>: FfiConverter<CsType, RustBuffer> {
+    public override CsType Lift(RustBuffer value) {
         return LiftFromRustBuffer(value);
     }
-    public override RustBuffer Lower(CsType value)
-    {
+    public override RustBuffer Lower(CsType value) {
         return LowerIntoRustBuffer(value);
     }
 }
@@ -186,88 +171,70 @@ internal abstract class FfiConverterRustBuffer<CsType> : FfiConverter<CsType, Ru
 // This would be a good candidate for isolating in its own ffi-support lib.
 // Error runtime.
 [StructLayout(LayoutKind.Sequential)]
-struct UniffiRustCallStatus
-{
+struct UniffiRustCallStatus {
     public sbyte code;
     public RustBuffer error_buf;
 
-    public bool IsSuccess()
-    {
+    public bool IsSuccess() {
         return code == 0;
     }
 
-    public bool IsError()
-    {
+    public bool IsError() {
         return code == 1;
     }
 
-    public bool IsPanic()
-    {
+    public bool IsPanic() {
         return code == 2;
     }
 }
 
 // Base class for all uniffi exceptions
-internal class UniffiException : System.Exception
-{
-    public UniffiException() : base() { }
-    public UniffiException(string message) : base(message) { }
+internal class UniffiException: System.Exception {
+    public UniffiException(): base() {}
+    public UniffiException(string message): base(message) {}
 }
 
-internal class UndeclaredErrorException : UniffiException
-{
-    public UndeclaredErrorException(string message) : base(message) { }
+internal class UndeclaredErrorException: UniffiException {
+    public UndeclaredErrorException(string message): base(message) {}
 }
 
-internal class PanicException : UniffiException
-{
-    public PanicException(string message) : base(message) { }
+internal class PanicException: UniffiException {
+    public PanicException(string message): base(message) {}
 }
 
-internal class AllocationException : UniffiException
-{
-    public AllocationException(string message) : base(message) { }
+internal class AllocationException: UniffiException {
+    public AllocationException(string message): base(message) {}
 }
 
-internal class InternalException : UniffiException
-{
-    public InternalException(string message) : base(message) { }
+internal class InternalException: UniffiException {
+    public InternalException(string message): base(message) {}
 }
 
-internal class InvalidEnumException : InternalException
-{
-    public InvalidEnumException(string message) : base(message)
-    {
+internal class InvalidEnumException: InternalException {
+    public InvalidEnumException(string message): base(message) {
     }
 }
 
-internal class UniffiContractVersionException : UniffiException
-{
-    public UniffiContractVersionException(string message) : base(message)
-    {
+internal class UniffiContractVersionException: UniffiException {
+    public UniffiContractVersionException(string message): base(message) {
     }
 }
 
-internal class UniffiContractChecksumException : UniffiException
-{
-    public UniffiContractChecksumException(string message) : base(message)
-    {
+internal class UniffiContractChecksumException: UniffiException {
+    public UniffiContractChecksumException(string message): base(message) {
     }
 }
 
 // Each top-level error class has a companion object that can lift the error from the call status's rust buffer
-interface CallStatusErrorHandler<E> where E : System.Exception
-{
+interface CallStatusErrorHandler<E> where E: System.Exception {
     E Lift(RustBuffer error_buf);
 }
 
 // CallStatusErrorHandler implementation for times when we don't expect a CALL_ERROR
-class NullCallStatusErrorHandler : CallStatusErrorHandler<UniffiException>
-{
+class NullCallStatusErrorHandler: CallStatusErrorHandler<UniffiException> {
     public static NullCallStatusErrorHandler INSTANCE = new NullCallStatusErrorHandler();
 
-    public UniffiException Lift(RustBuffer error_buf)
-    {
+    public UniffiException Lift(RustBuffer error_buf) {
         RustBuffer.Free(error_buf);
         return new UndeclaredErrorException("library has returned an error not declared in UNIFFI interface file");
     }
@@ -276,150 +243,120 @@ class NullCallStatusErrorHandler : CallStatusErrorHandler<UniffiException>
 // Helpers for calling Rust
 // In practice we usually need to be synchronized to call this safely, so it doesn't
 // synchronize itself
-class _UniffiHelpers
-{
+class _UniffiHelpers {
     public delegate void RustCallAction(ref UniffiRustCallStatus status);
     public delegate U RustCallFunc<out U>(ref UniffiRustCallStatus status);
 
     // Call a rust function that returns a Result<>.  Pass in the Error class companion that corresponds to the Err
     public static U RustCallWithError<U, E>(CallStatusErrorHandler<E> errorHandler, RustCallFunc<U> callback)
-        where E : UniffiException
+        where E: UniffiException
     {
         var status = new UniffiRustCallStatus();
         var return_value = callback(ref status);
-        if (status.IsSuccess())
-        {
+        if (status.IsSuccess()) {
             return return_value;
-        }
-        else if (status.IsError())
-        {
+        } else if (status.IsError()) {
             throw errorHandler.Lift(status.error_buf);
-        }
-        else if (status.IsPanic())
-        {
+        } else if (status.IsPanic()) {
             // when the rust code sees a panic, it tries to construct a rustbuffer
             // with the message.  but if that code panics, then it just sends back
             // an empty buffer.
-            if (status.error_buf.len > 0)
-            {
+            if (status.error_buf.len > 0) {
                 throw new PanicException(FfiConverterString.INSTANCE.Lift(status.error_buf));
-            }
-            else
-            {
+            } else {
                 throw new PanicException("Rust panic");
             }
-        }
-        else
-        {
+        } else {
             throw new InternalException($"Unknown rust call status: {status.code}");
         }
     }
 
     // Call a rust function that returns a Result<>.  Pass in the Error class companion that corresponds to the Err
     public static void RustCallWithError<E>(CallStatusErrorHandler<E> errorHandler, RustCallAction callback)
-        where E : UniffiException
+        where E: UniffiException
     {
-        _UniffiHelpers.RustCallWithError(errorHandler, (ref UniffiRustCallStatus status) =>
-        {
+        _UniffiHelpers.RustCallWithError(errorHandler, (ref UniffiRustCallStatus status) => {
             callback(ref status);
             return 0;
         });
     }
 
     // Call a rust function that returns a plain value
-    public static U RustCall<U>(RustCallFunc<U> callback)
-    {
+    public static U RustCall<U>(RustCallFunc<U> callback) {
         return _UniffiHelpers.RustCallWithError(NullCallStatusErrorHandler.INSTANCE, callback);
     }
 
     // Call a rust function that returns a plain value
-    public static void RustCall(RustCallAction callback)
-    {
-        _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) =>
-        {
+    public static void RustCall(RustCallAction callback) {
+        _UniffiHelpers.RustCall((ref UniffiRustCallStatus status) => {
             callback(ref status);
             return 0;
         });
     }
 }
 
-static class FFIObjectUtil
-{
-    public static void DisposeAll(params Object?[] list)
-    {
+static class FFIObjectUtil {
+    public static void DisposeAll(params Object?[] list) {
         Dispose(list);
     }
 
     // Dispose is implemented by recursive type inspection at runtime. This is because
     // generating correct Dispose calls for recursive complex types, e.g. List<List<int>>
     // is quite cumbersome.
-    private static void Dispose(Object? obj)
-    {
-        if (obj == null)
-        {
-            return;
-        }
+   private static void Dispose(Object? obj) {
+         if (obj == null) {
+             return;
+         }
 
-        if (obj is IDisposable disposable)
-        {
-            disposable.Dispose();
-            return;
-        }
+         if (obj is IDisposable disposable) {
+             disposable.Dispose();
+             return;
+         }
 
-        var objType = obj.GetType();
-        var typeCode = Type.GetTypeCode(objType);
-        if (typeCode != TypeCode.Object)
-        {
-            return;
-        }
+         var objType = obj.GetType();
+         var typeCode = Type.GetTypeCode(objType);
+         if (typeCode != TypeCode.Object) {
+             return;
+         }
 
-        var genericArguments = objType.GetGenericArguments();
-        if (genericArguments.Length == 0 && !objType.IsArray)
-        {
-            return;
-        }
+         var genericArguments = objType.GetGenericArguments();
+         if (genericArguments.Length == 0 && !objType.IsArray) {
+             return;
+         }
 
-        if (obj is System.Collections.IDictionary objDictionary)
-        {
-            //This extra code tests to not call "Dispose" for a Dictionary<something, double>()
-            //for all values as "double" and alike doesn't support interface "IDisposable"
-            var valuesType = objType.GetGenericArguments()[1];
-            var elementValuesTypeCode = Type.GetTypeCode(valuesType);
-            if (elementValuesTypeCode != TypeCode.Object)
-            {
-                return;
-            }
-            foreach (var value in objDictionary.Values)
-            {
-                Dispose(value);
-            }
-        }
-        else if (obj is System.Collections.IEnumerable listValues)
-        {
-            //This extra code tests to not call "Dispose" for a List<int>()
-            //for all keys as "int" and alike doesn't support interface "IDisposable"
-            var elementType = objType.IsArray ? objType.GetElementType() : genericArguments[0];
-            var elementValuesTypeCode = Type.GetTypeCode(elementType);
-            if (elementValuesTypeCode != TypeCode.Object)
-            {
-                return;
-            }
-            foreach (var value in listValues)
-            {
-                Dispose(value);
-            }
-        }
-    }
+         if (obj is System.Collections.IDictionary objDictionary) {
+             //This extra code tests to not call "Dispose" for a Dictionary<something, double>()
+             //for all values as "double" and alike doesn't support interface "IDisposable"
+             var valuesType = objType.GetGenericArguments()[1];
+             var elementValuesTypeCode = Type.GetTypeCode(valuesType);
+             if (elementValuesTypeCode != TypeCode.Object) {
+                 return;
+             }
+             foreach (var value in objDictionary.Values) {
+                 Dispose(value);
+             }
+         }
+         else if (obj is System.Collections.IEnumerable listValues) {
+             //This extra code tests to not call "Dispose" for a List<int>()
+             //for all keys as "int" and alike doesn't support interface "IDisposable"
+             var elementType = objType.IsArray ? objType.GetElementType() : genericArguments[0];
+             var elementValuesTypeCode = Type.GetTypeCode(elementType);
+             if (elementValuesTypeCode != TypeCode.Object) {
+                 return;
+             }
+             foreach (var value in listValues) {
+                 Dispose(value);
+             }
+         }
+     }
 }
 
 
 // Big endian streams are not yet available in dotnet :'(
 // https://github.com/dotnet/runtime/issues/26904
 
-class StreamUnderflowException : System.Exception
-{
-    public StreamUnderflowException()
-    {
+class StreamUnderflowException: System.Exception {
+    public StreamUnderflowException() {
     }
 }
 
@@ -452,9 +389,9 @@ static class BigEndianStreamExtensions
         int bytesToWrite = 8;
 #if DOTNET_8_0_OR_GREATER
          Span<byte> buffer = stackalloc byte[bytesToWrite];
-#else
-        byte[] buffer = new byte[bytesToWrite];
-#endif
+ #else
+         byte[] buffer = new byte[bytesToWrite];
+ #endif
         var posByte = bytesToWrite;
         while (posByte != 0)
         {
@@ -470,8 +407,7 @@ static class BigEndianStreamExtensions
 #endif
     }
 
-    public static uint ReadUint32(this Stream stream, int bytesToRead = 4)
-    {
+    public static uint ReadUint32(this Stream stream, int bytesToRead = 4) {
         CheckRemaining(stream, bytesToRead);
 #if DOTNET_8_0_OR_GREATER
          Span<byte> buffer = stackalloc byte[bytesToRead];
@@ -486,15 +422,14 @@ static class BigEndianStreamExtensions
         while (posByte != 0)
         {
             posByte--;
-            result |= buffer[posByte] * digitMultiplier;
+            result |= buffer[posByte]*digitMultiplier;
             digitMultiplier <<= 8;
         }
 
         return result;
     }
 
-    public static ulong ReadUInt64(this Stream stream)
-    {
+    public static ulong ReadUInt64(this Stream stream) {
         int bytesToRead = 8;
         CheckRemaining(stream, bytesToRead);
 #if DOTNET_8_0_OR_GREATER
@@ -510,51 +445,42 @@ static class BigEndianStreamExtensions
         while (posByte != 0)
         {
             posByte--;
-            result |= buffer[posByte] * digitMultiplier;
+            result |= buffer[posByte]*digitMultiplier;
             digitMultiplier <<= 8;
         }
 
         return result;
     }
 
-    public static void CheckRemaining(this Stream stream, int length)
-    {
-        if (stream.Length - stream.Position < length)
-        {
+    public static void CheckRemaining(this Stream stream, int length) {
+        if (stream.Length - stream.Position < length) {
             throw new StreamUnderflowException();
         }
     }
 
-    public static void ForEach<T>(this T[] items, Action<T> action)
-    {
-        foreach (var item in items)
-        {
+    public static void ForEach<T>(this T[] items, Action<T> action){
+        foreach (var item in items) {
             action(item);
         }
     }
 }
 
-class BigEndianStream
-{
+class BigEndianStream {
     Stream stream;
-    public BigEndianStream(Stream stream)
-    {
+    public BigEndianStream(Stream stream) {
         this.stream = stream;
     }
 
-    public bool HasRemaining()
-    {
+    public bool HasRemaining() {
         return (stream.Length - Position) > 0;
     }
 
-    public long Position
-    {
+    public long Position {
         get => stream.Position;
         set => stream.Position = value;
     }
 
-    public void WriteBytes(byte[] buffer)
-    {
+    public void WriteBytes(byte[] buffer) {
 #if DOTNET_8_0_OR_GREATER
         stream.Write(buffer);
 #else
@@ -574,17 +500,14 @@ class BigEndianStream
     public void WriteULong(ulong value) => stream.WriteInt64((long)value);
     public void WriteLong(long value) => stream.WriteInt64(value);
 
-    public void WriteFloat(float value)
-    {
-        unsafe
-        {
+    public void WriteFloat(float value) {
+        unsafe {
             WriteInt(*((int*)&value));
         }
     }
     public void WriteDouble(double value) => stream.WriteInt64(BitConverter.DoubleToInt64Bits(value));
 
-    public byte[] ReadBytes(int length)
-    {
+    public byte[] ReadBytes(int length) {
         stream.CheckRemaining(length);
         byte[] result = new byte[length];
         stream.Read(result, 0, length);
@@ -600,10 +523,8 @@ class BigEndianStream
     public short ReadShort() => (short)ReadUShort();
     public int ReadInt() => (int)ReadUInt();
 
-    public float ReadFloat()
-    {
-        unsafe
-        {
+    public float ReadFloat() {
+        unsafe {
             int value = ReadInt();
             return *((float*)&value);
         }
@@ -618,11 +539,10 @@ class BigEndianStream
 
 
 // This is an implementation detail that will be called internally by the public API.
-static class _UniFFILib
-{
+static class _UniFFILib {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiRustFutureContinuationCallback(
-        ulong @data, sbyte @pollResult
+        ulong @data,sbyte @pollResult
     );
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureFree(
@@ -646,7 +566,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteU8(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructU8 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructU8 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructI8
@@ -656,7 +576,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteI8(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructI8 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructI8 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructU16
@@ -666,7 +586,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteU16(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructU16 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructU16 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructI16
@@ -676,7 +596,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteI16(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructI16 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructI16 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructU32
@@ -686,7 +606,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteU32(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructU32 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructU32 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructI32
@@ -696,7 +616,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteI32(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructI32 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructI32 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructU64
@@ -706,7 +626,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteU64(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructU64 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructU64 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructI64
@@ -716,7 +636,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteI64(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructI64 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructI64 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructF32
@@ -726,7 +646,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteF32(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructF32 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructF32 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructF64
@@ -736,7 +656,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteF64(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructF64 @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructF64 @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructPointer
@@ -746,7 +666,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompletePointer(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructPointer @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructPointer @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructRustBuffer
@@ -756,7 +676,7 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteRustBuffer(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructRustBuffer @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructRustBuffer @result
     );
     [StructLayout(LayoutKind.Sequential)]
     public struct UniffiForeignFutureStructVoid
@@ -765,39 +685,96 @@ static class _UniFFILib
     }
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void UniffiForeignFutureCompleteVoid(
-        ulong @callbackData, _UniFFILib.UniffiForeignFutureStructVoid @result
+        ulong @callbackData,_UniFFILib.UniffiForeignFutureStructVoid @result
     );
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
-
-    static _UniFFILib()
-    {
+    static _UniFFILib() {
         _UniFFILib.uniffiCheckContractApiVersion();
         _UniFFILib.uniffiCheckApiChecksums();
-
-    }
+        
+        }
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr uniffi_async_ffi_fn_func_say_hello_async(RustBuffer @who
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern RustBuffer ffi_async_ffi_rustbuffer_alloc(ulong @size, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern RustBuffer ffi_async_ffi_rustbuffer_alloc(ulong @size,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern RustBuffer ffi_async_ffi_rustbuffer_from_bytes(ForeignBytes @bytes, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern RustBuffer ffi_async_ffi_rustbuffer_from_bytes(ForeignBytes @bytes,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rustbuffer_free(RustBuffer @buf, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern void ffi_async_ffi_rustbuffer_free(RustBuffer @buf,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern RustBuffer ffi_async_ffi_rustbuffer_reserve(RustBuffer @buf, ulong @additional, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern RustBuffer ffi_async_ffi_rustbuffer_reserve(RustBuffer @buf,ulong @additional,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_u8(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_u8(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -809,11 +786,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern byte ffi_async_ffi_rust_future_complete_u8(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern byte ffi_async_ffi_rust_future_complete_u8(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_i8(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_i8(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -825,11 +802,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern sbyte ffi_async_ffi_rust_future_complete_i8(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern sbyte ffi_async_ffi_rust_future_complete_i8(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_u16(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_u16(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -841,11 +818,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ushort ffi_async_ffi_rust_future_complete_u16(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern ushort ffi_async_ffi_rust_future_complete_u16(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_i16(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_i16(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -857,11 +834,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern short ffi_async_ffi_rust_future_complete_i16(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern short ffi_async_ffi_rust_future_complete_i16(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_u32(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_u32(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -873,11 +850,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern uint ffi_async_ffi_rust_future_complete_u32(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern uint ffi_async_ffi_rust_future_complete_u32(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_i32(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_i32(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -889,11 +866,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern int ffi_async_ffi_rust_future_complete_i32(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern int ffi_async_ffi_rust_future_complete_i32(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_u64(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_u64(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -905,11 +882,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ulong ffi_async_ffi_rust_future_complete_u64(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern ulong ffi_async_ffi_rust_future_complete_u64(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_i64(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_i64(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -921,11 +898,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern long ffi_async_ffi_rust_future_complete_i64(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern long ffi_async_ffi_rust_future_complete_i64(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_f32(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_f32(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -937,11 +914,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern float ffi_async_ffi_rust_future_complete_f32(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern float ffi_async_ffi_rust_future_complete_f32(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_f64(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_f64(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -953,11 +930,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern double ffi_async_ffi_rust_future_complete_f64(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern double ffi_async_ffi_rust_future_complete_f64(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_pointer(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_pointer(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -969,11 +946,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr ffi_async_ffi_rust_future_complete_pointer(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern IntPtr ffi_async_ffi_rust_future_complete_pointer(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_rust_buffer(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_rust_buffer(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -985,11 +962,11 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern RustBuffer ffi_async_ffi_rust_future_complete_rust_buffer(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern RustBuffer ffi_async_ffi_rust_future_complete_rust_buffer(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_poll_void(IntPtr @handle, IntPtr @callback, IntPtr @callbackData
+    public static extern void ffi_async_ffi_rust_future_poll_void(IntPtr @handle,IntPtr @callback,IntPtr @callbackData
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -1001,7 +978,7 @@ static class _UniFFILib
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ffi_async_ffi_rust_future_complete_void(IntPtr @handle, ref UniffiRustCallStatus _uniffi_out_err
+    public static extern void ffi_async_ffi_rust_future_complete_void(IntPtr @handle,ref UniffiRustCallStatus _uniffi_out_err
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -1012,61 +989,54 @@ static class _UniFFILib
     public static extern uint ffi_async_ffi_uniffi_contract_version(
     );
 
-    static void uniffiCheckContractApiVersion()
-    {
+    
+
+    static void uniffiCheckContractApiVersion() {
         var scaffolding_contract_version = _UniFFILib.ffi_async_ffi_uniffi_contract_version();
-        if (29 != scaffolding_contract_version)
-        {
+        if (29 != scaffolding_contract_version) {
             throw new UniffiContractVersionException($"uniffi.async_ffi: uniffi bindings expected version `29`, library returned `{scaffolding_contract_version}`");
         }
     }
 
-    static void uniffiCheckApiChecksums()
-    {
+    static void uniffiCheckApiChecksums() {
         {
             var checksum = _UniFFILib.uniffi_async_ffi_checksum_func_say_hello_async();
-            if (checksum != 28602)
-            {
+            if (checksum != 28602) {
                 throw new UniffiContractChecksumException($"uniffi.async_ffi: uniffi bindings expected function `uniffi_async_ffi_checksum_func_say_hello_async` checksum `28602`, library returned `{checksum}`");
             }
         }
     }
 }
 
-
 // Public interface members begin here.
 
 #pragma warning disable 8625
 
-class FfiConverterString : FfiConverter<string, RustBuffer>
-{
+
+
+
+class FfiConverterString: FfiConverter<string, RustBuffer> {
     public static FfiConverterString INSTANCE = new FfiConverterString();
 
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
     // store our length and avoid writing it out to the buffer.
-    public override string Lift(RustBuffer value)
-    {
-        try
-        {
+    public override string Lift(RustBuffer value) {
+        try {
             var bytes = value.AsStream().ReadBytes(Convert.ToInt32(value.len));
             return System.Text.Encoding.UTF8.GetString(bytes);
-        }
-        finally
-        {
+        } finally {
             RustBuffer.Free(value);
         }
     }
 
-    public override string Read(BigEndianStream stream)
-    {
+    public override string Read(BigEndianStream stream) {
         var length = stream.ReadInt();
         var bytes = stream.ReadBytes(length);
         return System.Text.Encoding.UTF8.GetString(bytes);
     }
 
-    public override RustBuffer Lower(string value)
-    {
+    public override RustBuffer Lower(string value) {
         var bytes = System.Text.Encoding.UTF8.GetBytes(value);
         var rbuf = RustBuffer.Alloc(bytes.Length);
         rbuf.AsWriteableStream().WriteBytes(bytes);
@@ -1077,15 +1047,13 @@ class FfiConverterString : FfiConverter<string, RustBuffer>
     // We aren't sure exactly how many bytes our string will be once it's UTF-8
     // encoded.  Allocate 3 bytes per unicode codepoint which will always be
     // enough.
-    public override int AllocationSize(string value)
-    {
+    public override int AllocationSize(string value) {
         const int sizeForLength = 4;
         var sizeForString = System.Text.Encoding.UTF8.GetByteCount(value);
         return sizeForLength + sizeForString;
     }
 
-    public override void Write(string value, BigEndianStream stream)
-    {
+    public override void Write(string value, BigEndianStream stream) {
         var bytes = System.Text.Encoding.UTF8.GetBytes(value);
         stream.WriteInt(bytes.Length);
         stream.WriteBytes(bytes);
@@ -1093,38 +1061,39 @@ class FfiConverterString : FfiConverter<string, RustBuffer>
 }
 
 
-internal class Exception : UniffiException
-{
-    Exception() : base() { }
-    Exception(String @Message) : base(@Message) { }
+
+
+
+internal class Exception: UniffiException {
+    Exception() : base() {}
+    Exception(String @Message) : base(@Message) {}
 
     // Each variant is a nested class
-
-    public class UnknownException : Exception
-    {
+    
+    
+    public class UnknownException : Exception {
         // Members
         public string @v1;
 
         // Constructor
         public UnknownException(
                 string @v1) : base(
-                "@v1" + "=" + @v1)
-        {
+                "@v1" + "=" + @v1) {
 
             this.@v1 = @v1;
         }
     }
+    
+
+    
 }
 
-class FfiConverterTypeError : FfiConverterRustBuffer<Exception>, CallStatusErrorHandler<Exception>
-{
+class FfiConverterTypeError : FfiConverterRustBuffer<Exception>, CallStatusErrorHandler<Exception> {
     public static FfiConverterTypeError INSTANCE = new FfiConverterTypeError();
 
-    public override Exception Read(BigEndianStream stream)
-    {
+    public override Exception Read(BigEndianStream stream) {
         var value = stream.ReadInt();
-        switch (value)
-        {
+        switch (value) {
             case 1:
                 return new Exception.UnknownException(
                     FfiConverterString.INSTANCE.Read(stream));
@@ -1133,10 +1102,8 @@ class FfiConverterTypeError : FfiConverterRustBuffer<Exception>, CallStatusError
         }
     }
 
-    public override int AllocationSize(Exception value)
-    {
-        switch (value)
-        {
+    public override int AllocationSize(Exception value) {
+        switch (value) {
 
             case Exception.UnknownException variant_value:
                 return 4
@@ -1146,10 +1113,8 @@ class FfiConverterTypeError : FfiConverterRustBuffer<Exception>, CallStatusError
         }
     }
 
-    public override void Write(Exception value, BigEndianStream stream)
-    {
-        switch (value)
-        {
+    public override void Write(Exception value, BigEndianStream stream) {
+        switch (value) {
             case Exception.UnknownException variant_value:
                 stream.WriteInt(1);
                 FfiConverterString.INSTANCE.Write(variant_value.@v1, stream);
@@ -1161,64 +1126,50 @@ class FfiConverterTypeError : FfiConverterRustBuffer<Exception>, CallStatusError
 }
 
 
-class ConcurrentHandleMap<T> where T : notnull
-{
+
+class ConcurrentHandleMap<T> where T: notnull {
     Dictionary<ulong, T> map = new Dictionary<ulong, T>();
 
     Object lock_ = new Object();
     ulong currentHandle = 0;
 
-    public ulong Insert(T obj)
-    {
-        lock (lock_)
-        {
+    public ulong Insert(T obj) {
+        lock (lock_) {
             currentHandle += 1;
             map[currentHandle] = obj;
             return currentHandle;
         }
     }
 
-    public bool TryGet(ulong handle, out T result)
-    {
-        lock (lock_)
-        {
-#pragma warning disable 8601 // Possible null reference assignment
+    public bool TryGet(ulong handle, out T result) {
+        lock (lock_) {
+            #pragma warning disable 8601 // Possible null reference assignment
             return map.TryGetValue(handle, out result);
-#pragma warning restore 8601
+            #pragma warning restore 8601
         }
     }
 
-    public T Get(ulong handle)
-    {
-        if (TryGet(handle, out var result))
-        {
+    public T Get(ulong handle) {
+        if (TryGet(handle, out var result)) {
             return result;
-        }
-        else
-        {
+        } else {
             throw new InternalException("ConcurrentHandleMap: Invalid handle");
         }
     }
 
-    public bool Remove(ulong handle)
-    {
+    public bool Remove(ulong handle) {
         return Remove(handle, out T result);
     }
 
-    public bool Remove(ulong handle, out T result)
-    {
-        lock (lock_)
-        {
+    public bool Remove(ulong handle, out T result) {
+        lock (lock_) {
             // Possible null reference assignment
-#pragma warning disable 8601
-            if (map.TryGetValue(handle, out result))
-            {
-#pragma warning restore 8601
+            #pragma warning disable 8601
+            if (map.TryGetValue(handle, out result)) {
+            #pragma warning restore 8601
                 map.Remove(handle);
                 return true;
-            }
-            else
-            {
+            } else {
                 return false;
             }
         }
@@ -1228,8 +1179,7 @@ class ConcurrentHandleMap<T> where T : notnull
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 delegate void UniFfiFutureCallback(IntPtr continuationHandle, byte pollResult);
 
-internal static class _UniFFIAsync
-{
+internal static class _UniFFIAsync {
     internal const byte UNIFFI_RUST_FUTURE_POLL_READY = 0;
     // internal const byte UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1;
 
@@ -1247,7 +1197,7 @@ internal static class _UniFFIAsync
             {
                 task.SetResult(pollResult);
             }
-            else
+            else 
             {
                 throw new InternalException($"Unable to find continuation handle: {continuationHandle}");
             }
@@ -1278,7 +1228,7 @@ internal static class _UniFFIAsync
     private static async Task PollFuture(IntPtr rustFuture, Action<IntPtr, IntPtr, IntPtr> pollFunc)
     {
         byte pollResult;
-        do
+        do 
         {
             var tcs = new TaskCompletionSource<byte>(TaskCreationOptions.RunContinuationsAsynchronously);
             IntPtr callback = Marshal.GetFunctionPointerForDelegate(UniffiRustFutureContinuationCallback.callback);
@@ -1286,7 +1236,7 @@ internal static class _UniFFIAsync
             pollFunc(rustFuture, callback, (IntPtr)mapEntry);
             pollResult = await tcs.Task;
         }
-        while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+        while(pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
     }
 
     public static async Task<T> UniffiRustCallAsync<T, F, E>(
@@ -1298,8 +1248,7 @@ internal static class _UniFFIAsync
         CallStatusErrorHandler<E> errorHandler
     ) where E : UniffiException
     {
-        try
-        {
+        try {
             await PollFuture(rustFuture, pollFunc);
             var result = _UniffiHelpers.RustCallWithError(errorHandler, (ref UniffiRustCallStatus status) => completeFunc(rustFuture, ref status));
             return liftFunc(result);
@@ -1318,8 +1267,7 @@ internal static class _UniFFIAsync
         CallStatusErrorHandler<E> errorHandler
     ) where E : UniffiException
     {
-        try
-        {
+         try {
             await PollFuture(rustFuture, pollFunc);
             _UniffiHelpers.RustCallWithError(errorHandler, (ref UniffiRustCallStatus status) => completeFunc(rustFuture, ref status));
 
@@ -1331,28 +1279,26 @@ internal static class _UniFFIAsync
     }
 }
 #pragma warning restore 8625
-internal static class AsyncFfiMethods
-{
+internal static class AsyncFfiMethods {
     /// <exception cref="Exception"></exception>
-    public static async Task<string> SayHelloAsync(string @who)
-    {
-        return await _UniFFIAsync.UniffiRustCallAsync(
-            // Get rust future
-            _UniFFILib.uniffi_async_ffi_fn_func_say_hello_async(FfiConverterString.INSTANCE.Lower(@who)),
-            // Poll
-            (IntPtr future, IntPtr continuation, IntPtr data) => _UniFFILib.ffi_async_ffi_rust_future_poll_rust_buffer(future, continuation, data),
-            // Complete
-            (IntPtr future, ref UniffiRustCallStatus status) =>
-            {
-                return _UniFFILib.ffi_async_ffi_rust_future_complete_rust_buffer(future, ref status);
-            },
-            // Free
-            (IntPtr future) => _UniFFILib.ffi_async_ffi_rust_future_free_rust_buffer(future),
-            // Lift
-            (result) => FfiConverterString.INSTANCE.Lift(result),
-            // Error
-            FfiConverterTypeError.INSTANCE
-        );
-    }
+   public static async Task<string> SayHelloAsync(string @who) 
+   {
+    return await _UniFFIAsync.UniffiRustCallAsync(
+        // Get rust future
+        _UniFFILib.uniffi_async_ffi_fn_func_say_hello_async(FfiConverterString.INSTANCE.Lower(@who)),
+        // Poll
+        (IntPtr future, IntPtr continuation, IntPtr data) => _UniFFILib.ffi_async_ffi_rust_future_poll_rust_buffer(future, continuation, data),
+        // Complete
+        (IntPtr future, ref UniffiRustCallStatus status) => {
+            return _UniFFILib.ffi_async_ffi_rust_future_complete_rust_buffer(future, ref status);
+        },
+        // Free
+        (IntPtr future) => _UniFFILib.ffi_async_ffi_rust_future_free_rust_buffer(future),
+        // Lift
+        (result) => FfiConverterString.INSTANCE.Lift(result),
+        // Error
+        FfiConverterTypeError.INSTANCE
+    );
+   }
 }
 

@@ -7,9 +7,9 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 1. Install [`uniffi-bindgen-cs`](https://github.com/NordSecurity/uniffi-bindgen-cs) with:
 
    ```bash
-   cargo install uniffi-bindgen-cs --git https://github.com/NordSecurity/uniffi-bindgen-cs --tag v0.9.1+v0.28.3
+   cargo install uniffi-bindgen-cs --git https://github.com/NordSecurity/uniffi-bindgen-cs --tag v0.10.0+v0.29.4
    ```
-   Note down the second version number (in the example above, `0.28.3`). This is the upstream [`uniffi`](https://github.com/mozilla/uniffi-rs)
+   Note down the second version number (in the example above, `0.29.4`). This is the upstream [`uniffi`](https://github.com/mozilla/uniffi-rs)
    version used for generating FFI scaffolding in Rust binary that the generated C# bindings will be compatible with. Update `Cargo.toml` accordingly.
 
 2. Build the Rust library with:
@@ -36,7 +36,7 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="binding\csharp"
    ```
 
-   Change the path to the library to `target/release/libasync_ffi.so` for Linux, or `target/release/libasync_ffi.dylib` for MacOS.
+   Remove the `.exe` extension and change the path to the library to `target/release/libasync_ffi.so` for Linux, or `target/release/libasync_ffi.dylib` for MacOS.
 
    Alternatively, to generate bindings for Python, use the official `uniffi-bindgen` tool instead, which is in sync with the latest `UniFFI` version:
 
