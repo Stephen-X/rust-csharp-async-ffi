@@ -42,27 +42,32 @@ pub async fn say_hello_async(who: String) -> Result<String, Error> {
 #[cfg(test)]
 mod tests {
     use assertor::*;
-    use futures::future::join_all;
+    use tokio::join;
     use super::*;
 
     #[tokio::test]
     async fn it_works() {
-        let results = join_all(vec![
-            say_hello_async("Stephen".to_string()),
-            say_hello_async("Ben".to_string()),
-            say_hello_async("John".to_string())
-        ]).await;
+        // `join!` macro doesn't run tasks in parallel (i.e. in multiple threads),
+        // need to spawn tasks explicitly
+        let results = join!(
+            tokio::spawn(say_hello_async("Stephen".to_string())),
+            tokio::spawn(say_hello_async("Ben".to_string())),
+            tokio::spawn(say_hello_async("John".to_string()))
+        );
 
-        println!("Result #1 = {:?}", results[0]);
-        assert_that!(results[0]).is_ok();
-        assert_that!(results[0]).ok().ends_with("Hello, Stephen!");
+        let results0 = results.0.unwrap();
+        println!("Result #1 = {:?}", results0);
+        assert_that!(results0).is_ok();
+        assert_that!(results0).ok().ends_with("Hello, Stephen!");
 
-        println!("Result #2 = {:?}", results[1]);
-        assert_that!(results[1]).is_ok();
-        assert_that!(results[1]).ok().ends_with("Hello, Ben!");
+        let results1 = results.1.unwrap();
+        println!("Result #2 = {:?}", results1);
+        assert_that!(results1).is_ok();
+        assert_that!(results1).ok().ends_with("Hello, Ben!");
 
-        println!("Result #3 = {:?}", results[2]);
-        assert_that!(results[2]).is_ok();
-        assert_that!(results[2]).ok().ends_with("Hello, John!");
+        let results2 = results.2.unwrap();
+        println!("Result #3 = {:?}", results2);
+        assert_that!(results2).is_ok();
+        assert_that!(results2).ok().ends_with("Hello, John!");
     }
 }

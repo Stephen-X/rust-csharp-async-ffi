@@ -19,7 +19,6 @@ thiserror = { version = "2" }
 uniffi = { version = "0.29.4", features = ["cli", "tokio"] }
 async-compat = { version = "0.2.0" }
 rand = { version = "0.9" }
-futures = { version = "0.3" }
 assertor = { version = "0.0.4" }
 
 [build-dependencies]
