@@ -2,7 +2,7 @@
 //! with a provided Tokio runtime.
 //! See also: https://doc.rust-lang.org/nomicon/ffi.html
 
-use std::ffi::{c_char, c_void, CStr, CString};
+use std::ffi::{c_char, c_uint, c_void, CStr, CString};
 use std::sync::OnceLock;
 use tokio::runtime::Runtime;
 use crate::function::say_hello_async;
@@ -41,6 +41,7 @@ pub extern "C" fn free_rust_string(str_ptr: *mut c_char) {
 ///
 /// # Arguments
 /// * `who_ptr` - Pointer to a C string containing the name.
+/// * `samples` - Number of samples to use in the Monte Carlo estimation of Pi.
 /// * `callback` - Callback function to be called with the result.
 /// * `tcs` - C# [`TaskCompletionSource`](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskcompletionsource-1?view=net-9.0).
 ///
@@ -49,6 +50,7 @@ pub extern "C" fn free_rust_string(str_ptr: *mut c_char) {
 #[unsafe(no_mangle)]
 pub extern "C" fn ffi_say_hello_async(
     who_ptr: *const c_char,
+    samples: c_uint,
     callback: CompletionCallback,
     tcs: *mut c_void,
 ) -> bool {
@@ -64,7 +66,7 @@ pub extern "C" fn ffi_say_hello_async(
 
     // Spawn a background task to execute the target library function
     runtime.spawn(async move {
-        match say_hello_async(who_str).await {
+        match say_hello_async(who_str, samples as u32).await {
             // On success, invoke the C# callback with the result
             Ok(message) => {
                 match CString::new(message) {
@@ -91,6 +93,7 @@ pub extern "C" fn ffi_say_hello_async(
 mod tests {
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
+    use rand::Rng;
     use super::*;
 
     #[test]
@@ -115,8 +118,13 @@ mod tests {
         let tcs = Arc::new(Mutex::new(None::<String>));
 
         // Call the FFI function
-        assert!(ffi_say_hello_async(who_cstr.as_ptr(), test_callback,
-                                    Arc::into_raw(tcs.clone()) as *mut c_void));
+        let mut rng = rand::rng();
+        assert!(ffi_say_hello_async(
+            who_cstr.as_ptr(),
+            rng.random_range(1_000..1_000_000) as u32,
+            test_callback,
+            Arc::into_raw(tcs.clone()) as *mut c_void)
+        );
 
         // Wait for async task to complete
         std::thread::sleep(Duration::from_millis(300));

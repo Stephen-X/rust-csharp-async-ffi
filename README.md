@@ -54,15 +54,17 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    Example output:
 
    ```bash
-   [23:02:35.681] INF TID:2 ######## Test #1: Interop with UniFFI ########
-   [23:02:35.691] INF TID:2 #1.1. Call SayHelloAsync in parallel:
-   [23:02:35.715] INF TID:8 ##Run 2## [thread=ThreadId(3)][task=Id(2)][sample=296077][pi=3.139291468097826] Hello, Ben!
-   [23:02:35.715] INF TID:10 ##Run 1## [thread=ThreadId(3)][task=Id(1)][sample=76775][pi=3.1402409638554216] Hello, Stephen!
-   [23:02:35.715] INF TID:11 ##Run 3## [thread=ThreadId(3)][task=Id(3)][sample=25508][pi=3.141602634467618] Hello, John!
-   [23:02:35.717] INF TID:11 #1.2. Call SayHelloAsync sequentially:
-   [23:02:35.726] INF TID:11 ##Run 1## [thread=ThreadId(3)][task=Id(4)][sample=731946][pi=3.142843870995948] Hello, Stephen!
-   [23:02:35.735] INF TID:11 ##Run 2## [thread=ThreadId(3)][task=Id(5)][sample=826046][pi=3.1433939514264337] Hello, Ben!
-   [23:02:35.736] INF TID:11 ##Run 3## [thread=ThreadId(3)][task=Id(6)][sample=46098][pi=3.143824027072758] Hello, John!
+   [00:30:58.631] INF TID:2 ######## Test #1: Interop with UniFFI ########
+   [00:30:58.641] INF TID:2 #1.1. Call SayHelloAsync in parallel:
+   [00:30:58.667] INF TID:7 ##Run 3## [thread=ThreadId(3)][task=Id(1)][sample=297736][pi=3.1462772388962033] Hello, John!
+   [00:30:58.667] INF TID:8 ##Run 1## [thread=ThreadId(3)][task=Id(2)][sample=377845][pi=3.1465283383397953] Hello, Stephen!
+   [00:30:58.675] INF TID:8 ##Run 2## [thread=ThreadId(3)][task=Id(3)][sample=724484][pi=3.1402432627911727] Hello, Ben!
+   [00:30:58.676] INF TID:8 #Parallel calls completed in 34 ms
+   [00:30:58.676] INF TID:8 #1.2. Call SayHelloAsync sequentially:
+   [00:30:58.681] INF TID:8 ##Run 1## [thread=ThreadId(3)][task=Id(4)][sample=377845][pi=3.1405999814738847] Hello, Stephen!
+   [00:30:58.689] INF TID:8 ##Run 2## [thread=ThreadId(3)][task=Id(5)][sample=724484][pi=3.143186046896826] Hello, Ben!
+   [00:30:58.693] INF TID:8 ##Run 3## [thread=ThreadId(3)][task=Id(6)][sample=297736][pi=3.142824515678319] Hello, John!
+   [00:30:58.693] INF TID:8 #Sequential calls completed in 16 ms
    ```
 
 
@@ -81,13 +83,15 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    Example output:
 
    ```bash
-   [23:02:35.736] INF TID:11 ######## Test #2: Interop with async FFI ########
-   [23:02:35.736] INF TID:11 #2.1. Call SayHelloAsync in parallel:
-   [23:02:35.748] INF TID:12 ##Run 3## [thread=ThreadId(18)][task=Id(28)][sample=482643][pi=3.138709149412713] Hello, John!
-   [23:02:35.750] INF TID:13 ##Run 1## [thread=ThreadId(19)][task=Id(27)][sample=808671][pi=3.141569315580749] Hello, Stephen!
-   [23:02:35.753] INF TID:14 ##Run 2## [thread=ThreadId(15)][task=Id(26)][sample=841224][pi=3.1388405466320504] Hello, Ben!
-   [23:02:35.753] INF TID:14 #2.2. Call SayHelloAsync sequentially:
-   [23:02:35.758] INF TID:14 ##Run 1## [thread=ThreadId(15)][task=Id(30)][sample=429233][pi=3.1409607369424064] Hello, Stephen!
-   [23:02:35.770] INF TID:14 ##Run 2## [thread=ThreadId(15)][task=Id(32)][sample=974361][pi=3.1416692581086476] Hello, Ben!
-   [23:02:35.774] INF TID:14 ##Run 3## [thread=ThreadId(15)][task=Id(34)][sample=206180][pi=3.138927151033078] Hello, John!
+   [00:30:58.693] INF TID:8 ######## Test #2: Interop with async FFI ########
+   [00:30:58.693] INF TID:8 #2.1. Call SayHelloAsync in parallel:
+   [00:30:58.700] INF TID:10 ##Run 3## [thread=ThreadId(19)][task=Id(27)][sample=297736][pi=3.14052717843996] Hello, John!
+   [00:30:58.701] INF TID:11 ##Run 1## [thread=ThreadId(20)][task=Id(26)][sample=377845][pi=3.1402400455213115] Hello, Stephen!
+   [00:30:58.704] INF TID:12 ##Run 2## [thread=ThreadId(7)][task=Id(28)][sample=724484][pi=3.1423909982829157] Hello, Ben!
+   [00:30:58.705] INF TID:5 #Parallel calls completed in 11 ms
+   [00:30:58.705] INF TID:5 #2.2. Call SayHelloAsync sequentially:
+   [00:30:58.710] INF TID:12 ##Run 1## [thread=ThreadId(7)][task=Id(30)][sample=377845][pi=3.1428019425955087] Hello, Stephen!
+   [00:30:58.719] INF TID:12 ##Run 2## [thread=ThreadId(7)][task=Id(32)][sample=724484][pi=3.1380071885645506] Hello, Ben!
+   [00:30:58.722] INF TID:12 ##Run 3## [thread=ThreadId(7)][task=Id(34)][sample=297736][pi=3.1396807910363544] Hello, John!
+   [00:30:58.722] INF TID:12 #Sequential calls completed in 17 ms
    ```

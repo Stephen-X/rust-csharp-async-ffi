@@ -754,7 +754,7 @@ static class _UniFFILib {
         }
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr uniffi_async_ffi_fn_func_say_hello_async(RustBuffer @who
+    public static extern IntPtr uniffi_async_ffi_fn_func_say_hello_async(RustBuffer @who,uint @samples
     );
 
     [DllImport("async_ffi", CallingConvention = CallingConvention.Cdecl)]
@@ -1001,8 +1001,8 @@ static class _UniFFILib {
     static void uniffiCheckApiChecksums() {
         {
             var checksum = _UniFFILib.uniffi_async_ffi_checksum_func_say_hello_async();
-            if (checksum != 21401) {
-                throw new UniffiContractChecksumException($"uniffi.async_ffi: uniffi bindings expected function `uniffi_async_ffi_checksum_func_say_hello_async` checksum `21401`, library returned `{checksum}`");
+            if (checksum != 12411) {
+                throw new UniffiContractChecksumException($"uniffi.async_ffi: uniffi bindings expected function `uniffi_async_ffi_checksum_func_say_hello_async` checksum `12411`, library returned `{checksum}`");
             }
         }
     }
@@ -1012,6 +1012,32 @@ static class _UniFFILib {
 
 #pragma warning disable 8625
 
+
+
+
+class FfiConverterUInt32: FfiConverter<uint, uint> {
+    public static FfiConverterUInt32 INSTANCE = new FfiConverterUInt32();
+
+    public override uint Lift(uint value) {
+        return value;
+    }
+
+    public override uint Read(BigEndianStream stream) {
+        return stream.ReadUInt();
+    }
+
+    public override uint Lower(uint value) {
+        return value;
+    }
+
+    public override int AllocationSize(uint value) {
+        return 4;
+    }
+
+    public override void Write(uint value, BigEndianStream stream) {
+        stream.WriteUInt(value);
+    }
+}
 
 
 
@@ -1285,13 +1311,14 @@ internal static class AsyncFfiMethods {
     ///
     /// # Arguments
     /// `who` - Name of the person to greet.
+    /// `samples` - Number of samples to use in the Monte Carlo estimation of Pi.
     /// </summary>
     /// <exception cref="Exception"></exception>
-   public static async Task<string> SayHelloAsync(string @who) 
+   public static async Task<string> SayHelloAsync(string @who, uint @samples) 
    {
     return await _UniFFIAsync.UniffiRustCallAsync(
         // Get rust future
-        _UniFFILib.uniffi_async_ffi_fn_func_say_hello_async(FfiConverterString.INSTANCE.Lower(@who)),
+        _UniFFILib.uniffi_async_ffi_fn_func_say_hello_async(FfiConverterString.INSTANCE.Lower(@who), FfiConverterUInt32.INSTANCE.Lower(@samples)),
         // Poll
         (IntPtr future, IntPtr continuation, IntPtr data) => _UniFFILib.ffi_async_ffi_rust_future_poll_rust_buffer(future, continuation, data),
         // Complete

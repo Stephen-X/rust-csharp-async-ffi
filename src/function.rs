@@ -11,13 +11,13 @@ pub enum Error {
 ///
 /// # Arguments
 /// `who` - Name of the person to greet.
+/// `samples` - Number of samples to use in the Monte Carlo estimation of Pi.
 #[uniffi::export(async_runtime = "tokio")]
-pub async fn say_hello_async(who: String) -> Result<String, Error> {
+pub async fn say_hello_async(who: String, samples: u32) -> Result<String, Error> {
     let result = tokio::spawn(async move {
         // Perform some random computationally heavy task (Monte Carlo estimation of Pi)
         let mut rng = rand::rng();
         let mut count = 0;
-        let samples = rng.random_range(1_000..1_000_000);
         for _ in 0..samples {
             let x: f64 = rng.random();
             let y: f64 = rng.random();
@@ -53,10 +53,11 @@ mod tests {
     async fn it_works() {
         // `join!` macro doesn't run tasks in parallel (i.e. in multiple threads),
         // need to spawn tasks explicitly
+        let mut rng = rand::rng();
         let results = join!(
-            tokio::spawn(say_hello_async("Stephen".to_string())),
-            tokio::spawn(say_hello_async("Ben".to_string())),
-            tokio::spawn(say_hello_async("John".to_string()))
+            tokio::spawn(say_hello_async("Stephen".to_string(), rng.random_range(1_000..1_000_000))),
+            tokio::spawn(say_hello_async("Ben".to_string(), rng.random_range(1_000..1_000_000))),
+            tokio::spawn(say_hello_async("John".to_string(), rng.random_range(1_000..1_000_000)))
         );
 
         let results0 = results.0.unwrap();

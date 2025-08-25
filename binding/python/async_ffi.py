@@ -461,7 +461,7 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_async_ffi_checksum_func_say_hello_async() != 21401:
+    if lib.uniffi_async_ffi_checksum_func_say_hello_async() != 12411:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
 # A ctypes library to expose the extern-C FFI definitions.
@@ -571,6 +571,7 @@ _UNIFFI_FOREIGN_FUTURE_COMPLETE_VOID = ctypes.CFUNCTYPE(None,ctypes.c_uint64,_Un
 )
 _UniffiLib.uniffi_async_ffi_fn_func_say_hello_async.argtypes = (
     _UniffiRustBuffer,
+    ctypes.c_uint32,
 )
 _UniffiLib.uniffi_async_ffi_fn_func_say_hello_async.restype = ctypes.c_uint64
 _UniffiLib.ffi_async_ffi_rustbuffer_alloc.argtypes = (
@@ -854,6 +855,19 @@ _uniffi_check_contract_api_version(_UniffiLib)
 # Public interface members begin here.
 
 
+class _UniffiConverterUInt32(_UniffiConverterPrimitiveInt):
+    CLASS_NAME = "u32"
+    VALUE_MIN = 0
+    VALUE_MAX = 2**32
+
+    @staticmethod
+    def read(buf):
+        return buf.read_u32()
+
+    @staticmethod
+    def write(value, buf):
+        buf.write_u32(value)
+
 class _UniffiConverterString:
     @staticmethod
     def check_lower(value):
@@ -1006,20 +1020,24 @@ async def _uniffi_rust_call_async(rust_future, ffi_poll, ffi_complete, ffi_free,
         )
     finally:
         ffi_free(rust_future)
-async def say_hello_async(who: "str") -> "str":
+async def say_hello_async(who: "str",samples: "int") -> "str":
 
     """
     Test function that runs some computationally heavy task then returns a greeting message.
 
     # Arguments
     `who` - Name of the person to greet.
+    `samples` - Number of samples to use in the Monte Carlo estimation of Pi.
     """
 
     _UniffiConverterString.check_lower(who)
     
+    _UniffiConverterUInt32.check_lower(samples)
+    
     return await _uniffi_rust_call_async(
         _UniffiLib.uniffi_async_ffi_fn_func_say_hello_async(
-        _UniffiConverterString.lower(who)),
+        _UniffiConverterString.lower(who),
+        _UniffiConverterUInt32.lower(samples)),
         _UniffiLib.ffi_async_ffi_rust_future_poll_rust_buffer,
         _UniffiLib.ffi_async_ffi_rust_future_complete_rust_buffer,
         _UniffiLib.ffi_async_ffi_rust_future_free_rust_buffer,

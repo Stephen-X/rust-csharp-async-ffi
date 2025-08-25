@@ -20,7 +20,7 @@ public static class RustInteropTokio
 
     // Test function exported from Rust
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-    private static extern bool ffi_say_hello_async(IntPtr who, CompletionCallBack callback, IntPtr tcs);
+    private static extern bool ffi_say_hello_async(IntPtr who, UIntPtr samples, CompletionCallBack callback, IntPtr tcs);
 
     static RustInteropTokio()
     {
@@ -84,8 +84,9 @@ public static class RustInteropTokio
     /// Test method that runs some computationally heavy task then returns a greeting message.
     /// </summary>
     /// <param name="who">Name of the person to greet.</param>
+    /// <param name="samples">Number of samples to use in the Monte Carlo estimation of Pi.</param>
     /// <exception cref="InvalidOperationException"></exception>
-    public static Task<string> SayHelloAsync(string who)
+    public static Task<string> SayHelloAsync(string who, uint samples)
     {
         var tcs = new TaskCompletionSource<string>();
         // Create a GC handle to prevent the TaskCompletionSource from being collected
@@ -94,10 +95,11 @@ public static class RustInteropTokio
 
         // Allocate unmanaged memory for the input string
         var whoPtr = Marshal.StringToHGlobalAnsi(who);
+        var samplesPtr = (UIntPtr)samples;
         try
         {
             // Call the Rust FFI function
-            if (!ffi_say_hello_async(whoPtr, Callback, tcsPtr))
+            if (!ffi_say_hello_async(whoPtr, samplesPtr, Callback, tcsPtr))
             {
                 tcs.SetException(new InvalidOperationException("Failed to call Rust function."));
             }
