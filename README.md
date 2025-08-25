@@ -48,9 +48,18 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 
 5. Go to directory `dotnet` and run the C# project with `dotnet run`.
 
-   The `async_ffi.dll` / `async_ffi.so` library file should be automatically copied to the output directory as part of the build process
+   The `async_ffi.dll` / `libasync_ffi.so` / `libasync_ffi.dylib` library file should be automatically copied to the output directory as part of the build process
    configured in `dotnet.csproj`.
 
+   Example output:
+
+   ```
+   ######## Test #1: Interop with UniFFI ########
+
+   ##Run 1## [thread=ThreadId(1)][task=Id(1)][sample=734934][pi=3.142431837416693] Hello, Stephen!
+   ##Run 2## [thread=ThreadId(1)][task=Id(2)][sample=724834][pi=3.1402334879434464] Hello, Ben!
+   ##Run 3## [thread=ThreadId(1)][task=Id(3)][sample=346549][pi=3.142885998805364] Hello, John!
+   ```
 
 ## Writing interop manually with mpsc
 

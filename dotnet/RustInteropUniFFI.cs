@@ -12,6 +12,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 namespace uniffi.async_ffi;
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
