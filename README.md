@@ -66,13 +66,28 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
    ```
 
 
-## Writing interop manually with mpsc
+## Writing interop manually with Tokio
 
-The Rustonomicon has the following recommendation about writing [async callbacks](https://doc.rust-lang.org/nomicon/ffi.html#asynchronous-callbacks):
+`src/ffi.rs` and `dotnet/RustInteropTokio.cs` demo how to write async Rust FFI bindings and C# scaffoldings manually with `tokio` runtime.
 
-> Things get more complicated when the external library spawns its own threads and invokes callbacks from there.
-> In these cases access to Rust data structures inside the callbacks is especially unsafe and proper synchronization mechanisms
-> must be used. Besides classical synchronization mechanisms like mutexes, one possibility in Rust is to **use channels
-> (in `std::sync::mpsc`) to forward data from the C thread that invoked the callback into a Rust thread**.
+1. Build the Rust library with:
 
-TODO
+   ```bash
+   cargo build --release
+   ```
+
+2. Go to directory `dotnet` and run the C# project with `dotnet run`.
+
+   Example output:
+
+   ```bash
+   [23:02:35.736] INF TID:11 ######## Test #2: Interop with async FFI ########
+   [23:02:35.736] INF TID:11 #2.1. Call SayHelloAsync in parallel:
+   [23:02:35.748] INF TID:12 ##Run 3## [thread=ThreadId(18)][task=Id(28)][sample=482643][pi=3.138709149412713] Hello, John!
+   [23:02:35.750] INF TID:13 ##Run 1## [thread=ThreadId(19)][task=Id(27)][sample=808671][pi=3.141569315580749] Hello, Stephen!
+   [23:02:35.753] INF TID:14 ##Run 2## [thread=ThreadId(15)][task=Id(26)][sample=841224][pi=3.1388405466320504] Hello, Ben!
+   [23:02:35.753] INF TID:14 #2.2. Call SayHelloAsync sequentially:
+   [23:02:35.758] INF TID:14 ##Run 1## [thread=ThreadId(15)][task=Id(30)][sample=429233][pi=3.1409607369424064] Hello, Stephen!
+   [23:02:35.770] INF TID:14 ##Run 2## [thread=ThreadId(15)][task=Id(32)][sample=974361][pi=3.1416692581086476] Hello, Ben!
+   [23:02:35.774] INF TID:14 ##Run 3## [thread=ThreadId(15)][task=Id(34)][sample=206180][pi=3.138927151033078] Hello, John!
+   ```

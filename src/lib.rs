@@ -2,4 +2,4 @@
 uniffi::setup_scaffolding!();
 
 mod function;
-// mod ffi;  // For testing manually written FFI code
+mod ffi;  // For testing manually written FFI code
