@@ -461,7 +461,7 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_async_ffi_checksum_func_say_hello_async() != 28602:
+    if lib.uniffi_async_ffi_checksum_func_say_hello_async() != 21401:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
 # A ctypes library to expose the extern-C FFI definitions.
@@ -1007,6 +1007,13 @@ async def _uniffi_rust_call_async(rust_future, ffi_poll, ffi_complete, ffi_free,
     finally:
         ffi_free(rust_future)
 async def say_hello_async(who: "str") -> "str":
+
+    """
+    Test function that runs some computationally heavy task then returns a greeting message.
+
+    # Arguments
+    `who` - Name of the person to greet.
+    """
 
     _UniffiConverterString.check_lower(who)
     

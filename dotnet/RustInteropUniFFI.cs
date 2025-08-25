@@ -1026,9 +1026,9 @@ static class _UniFFILib
     {
         {
             var checksum = _UniFFILib.uniffi_async_ffi_checksum_func_say_hello_async();
-            if (checksum != 28602)
+            if (checksum != 21401)
             {
-                throw new UniffiContractChecksumException($"uniffi.async_ffi: uniffi bindings expected function `uniffi_async_ffi_checksum_func_say_hello_async` checksum `28602`, library returned `{checksum}`");
+                throw new UniffiContractChecksumException($"uniffi.async_ffi: uniffi bindings expected function `uniffi_async_ffi_checksum_func_say_hello_async` checksum `21401`, library returned `{checksum}`");
             }
         }
     }
@@ -1334,6 +1334,12 @@ internal static class _UniFFIAsync
 #pragma warning restore 8625
 internal static class AsyncFfiMethods
 {
+    /// <summary>
+    /// Test function that runs some computationally heavy task then returns a greeting message.
+    ///
+    /// # Arguments
+    /// `who` - Name of the person to greet.
+    /// </summary>
     /// <exception cref="Exception"></exception>
     public static async Task<string> SayHelloAsync(string @who)
     {

@@ -53,13 +53,18 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 
    Example output:
 
+   ```bash
+   [23:02:35.681] INF TID:2 ######## Test #1: Interop with UniFFI ########
+   [23:02:35.691] INF TID:2 #1.1. Call SayHelloAsync in parallel:
+   [23:02:35.715] INF TID:8 ##Run 2## [thread=ThreadId(3)][task=Id(2)][sample=296077][pi=3.139291468097826] Hello, Ben!
+   [23:02:35.715] INF TID:10 ##Run 1## [thread=ThreadId(3)][task=Id(1)][sample=76775][pi=3.1402409638554216] Hello, Stephen!
+   [23:02:35.715] INF TID:11 ##Run 3## [thread=ThreadId(3)][task=Id(3)][sample=25508][pi=3.141602634467618] Hello, John!
+   [23:02:35.717] INF TID:11 #1.2. Call SayHelloAsync sequentially:
+   [23:02:35.726] INF TID:11 ##Run 1## [thread=ThreadId(3)][task=Id(4)][sample=731946][pi=3.142843870995948] Hello, Stephen!
+   [23:02:35.735] INF TID:11 ##Run 2## [thread=ThreadId(3)][task=Id(5)][sample=826046][pi=3.1433939514264337] Hello, Ben!
+   [23:02:35.736] INF TID:11 ##Run 3## [thread=ThreadId(3)][task=Id(6)][sample=46098][pi=3.143824027072758] Hello, John!
    ```
-   ######## Test #1: Interop with UniFFI ########
 
-   ##Run 1## [thread=ThreadId(1)][task=Id(1)][sample=734934][pi=3.142431837416693] Hello, Stephen!
-   ##Run 2## [thread=ThreadId(1)][task=Id(2)][sample=724834][pi=3.1402334879434464] Hello, Ben!
-   ##Run 3## [thread=ThreadId(1)][task=Id(3)][sample=346549][pi=3.142885998805364] Hello, John!
-   ```
 
 ## Writing interop manually with mpsc
 

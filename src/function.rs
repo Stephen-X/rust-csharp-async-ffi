@@ -7,6 +7,10 @@ pub enum Error {
     UnknownError(String),
 }
 
+/// Test function that runs some computationally heavy task then returns a greeting message.
+///
+/// # Arguments
+/// `who` - Name of the person to greet.
 #[uniffi::export(async_runtime = "tokio")]
 pub async fn say_hello_async(who: String) -> Result<String, Error> {
     let result = tokio::spawn(async move {
