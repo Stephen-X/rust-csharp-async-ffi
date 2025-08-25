@@ -20,17 +20,17 @@ try
     Log.Information("#1.1. Call SayHelloAsync in parallel:");
     var stopwatch = Stopwatch.StartNew();
     await Task.WhenAll(
-        Task.Run(async () => Log.Information("##Run 1## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Stephen", samples1))),
-        Task.Run(async () => Log.Information("##Run 2## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Ben", samples2))),
-        Task.Run(async () => Log.Information("##Run 3## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("John", samples3)))
+        Task.Run(async () => Log.Information("##Run 1## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Stéphanos", samples1))),
+        Task.Run(async () => Log.Information("##Run 2## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("賓", samples2))),
+        Task.Run(async () => Log.Information("##Run 3## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("John👓", samples3)))
     ).ContinueWith(_ => stopwatch.Stop());
     Log.Information("#Parallel calls completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 
     Log.Information("#1.2. Call SayHelloAsync sequentially:");
     stopwatch = Stopwatch.StartNew();
-    Log.Information("##Run 1## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Stephen", samples1));
-    Log.Information("##Run 2## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Ben", samples2));
-    Log.Information("##Run 3## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("John", samples3));
+    Log.Information("##Run 1## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("Stéphanos", samples1));
+    Log.Information("##Run 2## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("賓", samples2));
+    Log.Information("##Run 3## {SayHelloAsync}", await AsyncFfiMethods.SayHelloAsync("John👓", samples3));
     stopwatch.Stop();
     Log.Information("#Sequential calls completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 }
@@ -45,17 +45,17 @@ try
     Log.Information("#2.1. Call SayHelloAsync in parallel:");
     var stopwatch = Stopwatch.StartNew();
     await Task.WhenAll(
-        Task.Run(async () => Log.Information("##Run 1## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Stephen", samples1))),
-        Task.Run(async () => Log.Information("##Run 2## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Ben", samples2))),
-        Task.Run(async () => Log.Information("##Run 3## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("John", samples3)))
+        Task.Run(async () => Log.Information("##Run 1## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Stéphanos", samples1))),
+        Task.Run(async () => Log.Information("##Run 2## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("賓", samples2))),
+        Task.Run(async () => Log.Information("##Run 3## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("John👓", samples3)))
     ).ContinueWith(_ => stopwatch.Stop());
     Log.Information("#Parallel calls completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 
     Log.Information("#2.2. Call SayHelloAsync sequentially:");
     stopwatch = Stopwatch.StartNew();
-    Log.Information("##Run 1## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Stephen", samples1));
-    Log.Information("##Run 2## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Ben", samples2));
-    Log.Information("##Run 3## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("John", samples3));
+    Log.Information("##Run 1## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("Stéphanos", samples1));
+    Log.Information("##Run 2## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("賓", samples2));
+    Log.Information("##Run 3## {SayHelloAsync}", await RustInteropTokio.SayHelloAsync("John👓", samples3));
     stopwatch.Stop();
     Log.Information("#Sequential calls completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
 }

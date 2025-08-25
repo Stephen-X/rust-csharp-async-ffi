@@ -53,7 +53,7 @@ public static class RustInteropTokio
             else
             {
                 // Marshal the result back to a C# string
-                var result = Marshal.PtrToStringAnsi(callbackResultPtr);
+                var result = Marshal.PtrToStringUTF8(callbackResultPtr);
                 callbackTcs.SetResult(result ?? string.Empty);
             }
         }
@@ -99,7 +99,7 @@ public static class RustInteropTokio
             var tcsPtr = GCHandle.ToIntPtr(tcsHandle);
 
             // Allocate unmanaged memory for the input string
-            whoPtr = Marshal.StringToHGlobalAnsi(who);
+            whoPtr = Marshal.StringToCoTaskMemUTF8(who);
             var samplesPtr = (UIntPtr)samples;
 
             // Call the Rust FFI function
@@ -114,7 +114,7 @@ public static class RustInteropTokio
         {
             // Free allocated unmanaged memory
             // tcsHandle.Free();
-            if (whoPtr != 0) Marshal.FreeHGlobal(whoPtr);
+            if (whoPtr != 0) Marshal.FreeCoTaskMem(whoPtr);
         }
     }
 }
