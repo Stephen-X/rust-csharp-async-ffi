@@ -35,10 +35,15 @@ public static class RustInteropTokio
     /// </summary>
     private static readonly CompletionCallBack Callback = (callbackResultPtr, callbackTcsPtr) =>
     {
+        // No TaskCompletionSource provided
+        if (callbackTcsPtr == IntPtr.Zero) throw new InvalidOperationException("TaskCompletionSource pointer cannot be null.");
+
+        // TODO: Upstream introduced GCHandle<T> as IDisposable: https://github.com/dotnet/runtime/pull/111307;
+        //       integrate when available.
+        GCHandle callbackTcsHandle = GCHandle.FromIntPtr(callbackTcsPtr);
         try
         {
             // Retrieve the `TaskCompletionSource` from the GC handle
-            var callbackTcsHandle = GCHandle.FromIntPtr(callbackTcsPtr);
             var callbackTcs = (TaskCompletionSource<string>)callbackTcsHandle.Target!;
 
             if (callbackResultPtr == IntPtr.Zero)
@@ -51,19 +56,14 @@ public static class RustInteropTokio
                 var result = Marshal.PtrToStringAnsi(callbackResultPtr);
                 callbackTcs.SetResult(result ?? string.Empty);
             }
-
-            callbackTcsHandle.Free();
         }
         catch (Exception ex)
         {
             try
             {
                 // Retrieve the `TaskCompletionSource` from the GC handle
-                var callbackTcsHandle = GCHandle.FromIntPtr(callbackTcsPtr);
                 var callbackTcs = (TaskCompletionSource<string>)callbackTcsHandle.Target!;
-
                 callbackTcs.SetException(ex);
-                callbackTcsHandle.Free();
             }
             catch
             {
@@ -72,7 +72,8 @@ public static class RustInteropTokio
         }
         finally
         {
-            // Free the unmanaged memory allocated for the result string
+            // Free allocated unmanaged memory
+            callbackTcsHandle.Free();
             if (callbackResultPtr != IntPtr.Zero)
             {
                 free_rust_string(callbackResultPtr);
@@ -91,25 +92,29 @@ public static class RustInteropTokio
         var tcs = new TaskCompletionSource<string>();
         // Create a GC handle to prevent the TaskCompletionSource from being collected
         var tcsHandle = GCHandle.Alloc(tcs);
-        var tcsPtr = GCHandle.ToIntPtr(tcsHandle);
+        nint whoPtr = 0;
 
-        // Allocate unmanaged memory for the input string
-        var whoPtr = Marshal.StringToHGlobalAnsi(who);
-        var samplesPtr = (UIntPtr)samples;
         try
         {
+            var tcsPtr = GCHandle.ToIntPtr(tcsHandle);
+
+            // Allocate unmanaged memory for the input string
+            whoPtr = Marshal.StringToHGlobalAnsi(who);
+            var samplesPtr = (UIntPtr)samples;
+
             // Call the Rust FFI function
             if (!ffi_say_hello_async(whoPtr, samplesPtr, Callback, tcsPtr))
             {
                 tcs.SetException(new InvalidOperationException("Failed to call Rust function."));
             }
+
+            return tcs.Task;
         }
         finally
         {
-            // Free allocated string memory
-            Marshal.FreeHGlobal(whoPtr);
+            // Free allocated unmanaged memory
+            // tcsHandle.Free();
+            if (whoPtr != 0) Marshal.FreeHGlobal(whoPtr);
         }
-
-        return tcs.Task;
     }
 }
