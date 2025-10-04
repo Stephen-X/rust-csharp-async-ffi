@@ -33,7 +33,11 @@ This project demos two approaches to create async Rust FFI bindings and C# / .NE
 3. Generate the C# binding code with:
 
    ```bash
-   uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="binding\csharp"
+   uniffi-bindgen-cs.exe --library target\release\async_ffi.dll --out-dir="binding\csharp" --no-format
+
+   # CSharpier auto-formatting is currently not supported due to breaking changes made to version 1.0.
+   # Install and run tool manually instead: https://github.com/NordSecurity/uniffi-bindgen-cs/issues/116
+   csharpier format binding\csharp\async_ffi.cs --include-generated
    ```
 
    Remove the `.exe` extension and change the path to the library to `target/release/libasync_ffi.so` for Linux, or `target/release/libasync_ffi.dylib` for MacOS.
